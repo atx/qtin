@@ -87,15 +87,14 @@ static PyObject *xwrapper_has_atom(PyObject *self, PyObject *args) {
 							(unsigned char **) &data);
 
 		if(type != XA_ATOM)
-			goto clean;
+			break;
 
 		if(cmp == *data) {
 			ret = 1;
-			goto clean;
+			break;
 		}
 	}
 
-clean:
 	XCloseDisplay(d);
 
 	if(ret)
