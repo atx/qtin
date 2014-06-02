@@ -1,0 +1,42 @@
+{
+
+	"orientation": "vertical",
+	"vpos": "top",
+	"hpos": "left",
+	"width": 70,
+	"height": 500,
+	"bgcolor": "black",
+	"fgcolor": "white",
+	"margin": "2 3 2 3",
+	"widgets": [
+		{
+			"type": "spacer",
+			"height": 10
+		},
+		{
+			"type": "clock",
+			"height": 25,
+			"format": "%H:%M",
+			"font": "Monospace",
+			"size": 20
+		},
+		{
+			"type": "clock",
+			"height": 25,
+			"format": "--%m-%d",
+			"font": "Monospace",
+			"size": 15
+		},
+		{
+			"type": "battery",
+			"height": 25,
+			"size": 15
+		},
+		{
+			"type": "taskbar",
+			"height": 415,
+			"size": 30,
+			"desktops": 0
+		}
+	]
+}

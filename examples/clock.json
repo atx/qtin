@@ -1,0 +1,24 @@
+{
+	"orientation": "horizontal",
+	"vpos" : "bottom",
+	"hpos": "right",
+	"width": 60,
+	"height": 100,
+	"bgcolor": "black",
+	"fgcolor": "white",
+	"margin": "2 3 2 3",
+	"widgets": [
+		{
+			"type": "spacer",
+			"height": 10
+		},
+		{
+			"type": "clock",
+			"format": "%H:%M",
+			"size": 26,
+			"height": 70
+		}
+	
+	]
+	
+}
