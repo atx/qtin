@@ -55,11 +55,16 @@ class TaskbarWidget(QtGui.QWidget):
                 (w.has_atom("_NET_WM_STATE", "_NET_WM_STATE_SKIP_TASKBAR")): 
                 continue
             
-            # TODO Better way of selecting letters
+            letter = w.get_class()[0]
+            if w.is_active():
+                letter = letter.upper()
+            else:
+                letter = letter.lower()
+            
             p.drawText(ptrX, ptrY, 
                        max(addX, addY), max(addX, addY),
                        QtCore.Qt.AlignCenter,
-                       w.get_title().split()[-1][0].upper()) 
+                       letter) 
 
             self._buttons.append({ "h": max(ptrX, ptrY), "win": w})
             ptrX += addX
