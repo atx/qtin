@@ -186,6 +186,7 @@ static PyObject *xwrapper_get_root_window(PyObject *self, PyObject *args) {
 	Display *d = XOpenDisplay(NULL);
 	XSynchronize(d, True);
 	Window result = DefaultRootWindow(d);
+	XCloseDisplay(d);
 	return Py_BuildValue("k", result);
 }
 
