@@ -20,6 +20,8 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 
+static Display *display;
+
 static PyObject *xwrapper_add_atom(PyObject *self, PyObject *args) {
 	Window w;
 	char *name;
@@ -71,8 +73,10 @@ static PyObject *xwrapper_has_atom(PyObject *self, PyObject *args) {
 	XSynchronize(d, True);
 
 	Atom cmp = XInternAtom(d, atname, True);
-	if(!cmp) /* The Atom does not exist */
+	if(!cmp) {
+		XCloseDisplay(d);
 		Py_RETURN_FALSE;
+	}
 
 	Atom type;
 	int format;
@@ -102,6 +106,63 @@ static PyObject *xwrapper_has_atom(PyObject *self, PyObject *args) {
 	Py_RETURN_FALSE;
 }
 
+static PyObject *xwrapper_get_string(PyObject *self, PyObject *args) {
+	Window w;
+	char *propname;
+
+	if(!PyArg_ParseTuple(args, "ks", &w, &propname))
+		return NULL;
+
+	Display *d = XOpenDisplay(NULL);
+	XSynchronize(d, True);
+
+	Atom prop = XInternAtom(d, propname, True);
+	Atom type;
+	unsigned int format;
+	unsigned long nitems;
+	unsigned long after;
+	unsigned int *result;
+	if(prop)
+		XGetWindowProperty(d, w, prop, 0, 128, False, AnyPropertyType, /* 4096 chars should be enough for everything */
+							&type, &format, &nitems, &after,
+							(unsigned char **) &result);
+	XCloseDisplay(d);
+
+	if(!nitems || !prop)
+		Py_RETURN_NONE;
+
+	return Py_BuildValue("s", result);
+}
+
+static PyObject *xwrapper_get_cardinal(PyObject *self, PyObject *args) {
+	Window w;
+	char *propname;
+	unsigned int offset;
+
+	if(!PyArg_ParseTuple(args, "kks", &w, &offset, &propname))
+		return NULL;
+
+	Display *d = XOpenDisplay(NULL);
+	XSynchronize(d, True);
+
+	Atom prop = XInternAtom(d, propname, True);
+	Atom type;
+	unsigned int format;
+	unsigned long nitems;
+	unsigned long after;
+	unsigned int *result;
+	if(prop)
+		XGetWindowProperty(d, w, prop, offset, 1, False, AnyPropertyType,
+							&type, &format, &nitems, &after,
+							(unsigned char **) &result);
+	XCloseDisplay(d);
+
+	if(!nitems || !prop)
+		Py_RETURN_NONE;
+
+	return Py_BuildValue("k", *result);
+}
+
 static PyObject *xwrapper_delete_property(PyObject *self, PyObject *args) {
 	Window w;
 	char *name;
@@ -121,11 +182,50 @@ static PyObject *xwrapper_delete_property(PyObject *self, PyObject *args) {
 	Py_RETURN_NONE;
 }
 
+static PyObject *xwrapper_get_root_window(PyObject *self, PyObject *args) {
+	Display *d = XOpenDisplay(NULL);
+	XSynchronize(d, True);
+	Window result = DefaultRootWindow(d);
+	return Py_BuildValue("k", result);
+}
+
+static PyObject *xwrapper_send_event(PyObject *self, PyObject *args) {
+	XEvent xev;
+	char *atname;
+
+	if(!PyArg_ParseTuple(args, "kskkkkk", (unsigned int *) &xev.xclient.window, &atname,
+							&xev.xclient.data.l[0], &xev.xclient.data.l[1],
+							&xev.xclient.data.l[2], &xev.xclient.data.l[3],
+							&xev.xclient.data.l[4]))
+		return NULL;
+
+	Display *d = XOpenDisplay(NULL);
+	XSynchronize(d, True);
+
+	xev.xclient.type = ClientMessage;
+	xev.xclient.serial = 0;
+	xev.xclient.send_event = True;
+	xev.xclient.message_type = XInternAtom(d, atname, False);
+	xev.xclient.format = 32;
+
+	XSendEvent(d, DefaultRootWindow(d), True,
+				SubstructureNotifyMask | SubstructureRedirectMask,
+				&xev);
+
+	XCloseDisplay(d);
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef xwrapper_methods[] = {
 	{"add_atom", xwrapper_add_atom, METH_VARARGS, "Add atom to window."},
 	{"add_cardinal", xwrapper_add_cardinal, METH_VARARGS, "Add cardinal to window."},
 	{"has_atom", xwrapper_has_atom, METH_VARARGS, "Returns true if window does property with specified atom value."},
+	{"get_cardinal", xwrapper_get_cardinal, METH_VARARGS, "Returns cardinal at offset."},
+	{"get_string", xwrapper_get_string, METH_VARARGS, "Returns string at property."},
 	{"delete_property", xwrapper_delete_property, METH_VARARGS, "Delete window property."},
+	{"get_root_window", xwrapper_get_root_window, METH_VARARGS, "Returns ID of the root window."},
+	{"send_event", xwrapper_send_event, METH_VARARGS, "Sends event to the WM."},
 	{NULL, NULL, 0, NULL}
 };
 

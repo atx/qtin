@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from subprocess import Popen, PIPE
 import xwrapper #@UnresolvedImport
 
 class Window:
@@ -23,19 +22,30 @@ class Window:
         self.win_id = winid
         
     def get_title(self):
-        return " ".join(self._get_relevant_wmctrl().split()[3:])
+        return xwrapper.get_string(self.win_id, "_NET_WM_VISIBLE_NAME")
+    
+    def get_class(self):
+        return xwrapper.get_string(self.win_id, "WM_CLASS")
     
     def get_desktop(self):
-        return int(self._get_relevant_wmctrl().split()[1])
+        return xwrapper.get_cardinal(self.win_id, 0, "_NET_WM_DESKTOP")
     
     def reserve_space(self, left=0, right=0, top=0, bottom=0):
         self.set_x_property("_NET_WM_STRUT_PARTIAL", 
                             [left, right, top, bottom, 0, 0, 0, 0, 0, 0, 0, 0], 
                             tpe="cardinal")
         
+    def is_active(self):
+        return xwrapper.get_cardinal(xwrapper.get_root_window(), 0, 
+                                     "_NET_ACTIVE_WINDOW") == self.win_id
+        
     def switch_to(self):
-        Popen(["wmctrl", "-i", "-a", hex(self.win_id)])
-    
+        root = xwrapper.get_root_window()
+        
+        xwrapper.send_event(root, "_NET_CURRENT_DESKTOP", self.get_desktop(), 0, 0, 0, 0)
+        xwrapper.send_event(self.win_id, "_NET_ACTIVE_WINDOW", 2, 0, 0, 0, 0)
+        
+        
     def has_atom(self, name, value):
         return xwrapper.has_atom(self.win_id, name, value)
     
@@ -51,28 +61,16 @@ class Window:
             elif tpe == "cardinal":
                 xwrapper.add_cardinal(self.win_id, name, at)
         
-    def does_exist(self):
-        return self._get_relevant_wmctrl() != None
-        
-    def _get_relevant_wmctrl(self):
-        for x in Window._get_wmctrl_list():
-            if x.startswith("0x%.8x" % self.win_id):
-                return x
-        return None
-    
     @staticmethod
     def get_all_windows():
-        res = []
-        for l in Window._get_wmctrl_list():
-            spl = l.split()
-            if(len(spl) < 1):
-                continue
-            res.append(Window(int(spl[0], 16)))
-        return res
-    
-    @staticmethod
-    def _get_wmctrl_list():
-        w = Popen(["wmctrl", "-l"], stdout=PIPE)
-        out = w.communicate()[0]
-        w.wait()
-        return str(out, encoding="UTF-8").split("\n")
+        root = xwrapper.get_root_window()
+        ret = []
+        i = 0
+        while not ret or ret[-1] != None:
+            wid = xwrapper.get_cardinal(root, i, "_NET_CLIENT_LIST")
+            if not wid:
+                break   
+            ret.append(wid)
+            i += 1
+            
+        return [Window(x) for x in ret]
