@@ -27,6 +27,7 @@ from PyQt4.QtCore import Qt
 from clock import ClockWidget
 from battery import BatteryWidget
 from taskbar import TaskbarWidget
+from script import ScriptWidget
 
 def build_widget_style(w):
     style = ""
@@ -139,6 +140,8 @@ if __name__ == "__main__":
         elif typ == "taskbar":
             widget = TaskbarWidget(is_vertical=isvert, 
                                    desktops=w.get("desktops"))
+        elif typ == "script":
+            widget = ScriptWidget(w["run"], w["every"] if w.get("every") else -1)
             
         else:
             parser.error("Type %s is not known." % typ)
