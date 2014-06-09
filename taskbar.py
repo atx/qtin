@@ -52,7 +52,8 @@ class TaskbarWidget(QtGui.QWidget):
         p.begin(self)
         for w in TaskbarWidget._get_sorted_windows():
             if (self.desktops and not w.get_desktop() in self.desktops) or \
-                (w.has_atom("_NET_WM_STATE", "_NET_WM_STATE_SKIP_TASKBAR")): 
+                w.has_atom("_NET_WM_STATE", "_NET_WM_STATE_SKIP_TASKBAR") or \
+                w.has_atom("_NET_WM_WINDOW_TYPE", "_NET_WM_WINDOW_TYPE_DIALOG"): 
                 continue
             
             letter = w.get_class()[0]
