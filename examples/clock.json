@@ -13,10 +13,11 @@
 			"height": 10
 		},
 		{
-			"type": "clock",
-			"format": "%H:%M",
-			"size": 26,
-			"height": 70
+			"type": "script",
+			"run": "date +%H:%M",
+			"every": 60,
+			"height": 70,
+			"size": 20
 		}
 	
 	]

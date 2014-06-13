@@ -14,21 +14,25 @@
 			"height": 10
 		},
 		{
-			"type": "clock",
+			"type": "script",
 			"height": 25,
-			"format": "%H:%M",
+			"run": "date +%H:%M",
+			"every": 60,
 			"font": "Monospace",
 			"size": 20
 		},
 		{
-			"type": "clock",
+			"type": "script",
 			"height": 25,
-			"format": "--%m-%d",
+			"run": "date +--%m-%d",
+			"every": 60,
 			"font": "Monospace",
 			"size": 15
 		},
 		{
-			"type": "battery",
+			"type": "script",
+			"run": "if [ -f /sys/class/power_supply/BAT0/capacity ]; then cat /sys/class/power_supply/BAT0/capacity; else echo NC; fi",
+			"every": 20,
 			"height": 25,
 			"size": 15
 		},
