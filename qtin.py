@@ -24,8 +24,6 @@ from os import path
 from PyQt4 import QtGui, QtCore
 from PyQt4.QtCore import Qt
 
-from clock import ClockWidget
-from battery import BatteryWidget
 from taskbar import TaskbarWidget
 from script import ScriptWidget
 
@@ -127,16 +125,9 @@ if __name__ == "__main__":
         style = build_widget_style(w)
         widget = None
         
-        if typ == "clock":
-            widget = ClockWidget(fmt=w["format"] if w.get("format") else "%H:%M")
-            
-        elif typ == "spacer":
+        if typ == "spacer":
             widget = QtGui.QWidget()
             
-        elif typ == "battery":
-            widget = BatteryWidget(fmt=w["format"] if w.get("format") else "%s%%",
-                                   path=w["path"] if w.get("path") else "/sys/class/power_supply/BAT0/capacity",
-                                   pollrate=w["pollrate"] if w.get("pollrate") else 5000)
         elif typ == "taskbar":
             widget = TaskbarWidget(is_vertical=isvert, 
                                    desktops=w.get("desktops"))
