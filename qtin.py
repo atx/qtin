@@ -114,7 +114,7 @@ def build_widget_style(w):
     return style
 
 # Parse command line options
-parser = argparse.ArgumentParser(description="Starts simple-panel.")
+parser = argparse.ArgumentParser(description="Starts qtin.")
 
 parser.add_argument("-c", "--config", dest="config", required=True, 
                     type=lambda x: x if path.isfile(x) else parser.error("Config file does not exists."), 
