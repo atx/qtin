@@ -19,6 +19,7 @@ import argparse
 import signal
 import json
 import sys
+import jsonschema
 from xctl import Window #@UnresolvedImport
 from os import path
 from PyQt4 import QtGui, QtCore
@@ -26,6 +27,75 @@ from PyQt4.QtCore import Qt
 
 from taskbar import TaskbarWidget
 from script import ScriptWidget
+
+CONFIG_SCHEMA = {
+    "title": "qtin configuration file schema",
+    "type": "object",
+    "properties": {
+        "orientation": {
+            "type": "string",
+            "enum": ["vertical", "horizontal"]
+        },
+        "vpos": {
+            "type": "string",
+            "enum": ["top", "bottom"]
+        },
+        "hpos": {
+            "type": "string",
+            "enum": ["left", "right"]
+        },
+        "width": {
+            "type": "integer",
+            "minimum": 1
+        },
+        "height": {
+            "type": "integer",
+            "minimum": 1
+        },
+        "bgcolor": {
+            "type": "string"
+        },
+        "fgcolor": {
+            "type": "string"
+        },
+        "margin": {
+            "type": "string",
+            "pattern": "^([0-9]+ ){3}([0-9]{1})$"
+        },
+        "widgets": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "minItems": 1,
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": ["spacer", "script", "taskbar"]
+                    },
+                    "height": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "run": {
+                        "type": "string"
+                    },
+                    "every": {
+                        "type": "number"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "font": {
+                        "type": "string"
+                    }
+                },
+                "required": ["type", "height"]
+            }
+        }
+    },
+    "required": ["orientation", "vpos", "hpos", "width", "height", "widgets"]
+}
 
 def build_widget_style(w):
     style = ""
@@ -58,19 +128,10 @@ try:
 except ValueError:
     parser.error("Parsing of config file failed.")
 
-# Check config
-for k, v in {"orientation" : {"horizontal", "vertical"}, 
-          "vpos": {"top", "bottom"}, 
-          "hpos": {"left", "right"}, 
-          "width": int, 
-          "height": int, 
-          "widgets": list,
-    }.items():
-    if not cfg.get(k):
-        parser.error("Missing %s" % k)
-    if (isinstance(v, set) and not cfg[k] in v) or \
-        (isinstance(v, type) and not isinstance(cfg[k], v)):
-        parser.error("Incorrect value of %s" % k)
+try:
+    jsonschema.validate(cfg, CONFIG_SCHEMA)
+except jsonschema.ValidationError as e:
+    parser.error(e.message)
 
 # Init
 if __name__ == "__main__":
@@ -99,10 +160,7 @@ if __name__ == "__main__":
     # Margin
     mg = [0, 0, 0, 0]
     if cfg.get("margin"):
-        try:
-            mg = [int(x) for x in cfg["margin"].split()]
-        except ValueError:
-            parser.error("Invalid format of margin! Should be <left> <top> <right> <bottom>")
+        mg = [int(x) for x in cfg["margin"].split()]
     
     # Position
     screen = app.desktop().screenGeometry()
@@ -119,12 +177,8 @@ if __name__ == "__main__":
     
     for i, w in enumerate(cfg["widgets"]):
         typ = w.get("type")
-        if not typ:
-            parser.error("Widget number %d missing type." % i)
-        
         style = build_widget_style(w)
         widget = None
-        
         if typ == "spacer":
             widget = QtGui.QWidget()
             
@@ -133,9 +187,6 @@ if __name__ == "__main__":
                                    desktops=w.get("desktops"))
         elif typ == "script":
             widget = ScriptWidget(w["run"], w["every"] if w.get("every") else -1)
-            
-        else:
-            parser.error("Type %s is not known." % typ)
         
         widget.setStyleSheet(style)
         widget.setFixedWidth(width if isvert else w["height"])
@@ -162,6 +213,5 @@ if __name__ == "__main__":
     QtCore.QObject.connect(timer, QtCore.SIGNAL("timeout()"), callback)
     timer.setSingleShot(True)
     timer.start(500)
-    
     
     sys.exit(app.exec_())
